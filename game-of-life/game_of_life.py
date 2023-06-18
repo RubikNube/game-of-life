@@ -1,6 +1,8 @@
 # A simple game of life implementation in python
 
 import pygame
+from constants import CELL_ACTIVE, CELL_INACTIVE, GRID_WIDTH, GRID_HEIGHT
+from game_of_life_patterns import get_gun_one_state, get_gun_two_state
 
 # Constants
 WIDTH = 800
@@ -13,15 +15,9 @@ ACTIVE_CELL_COLOR = (0, 0, 0)
 INACTIVE_CELL_COLOR = (255, 255, 255)
 # Set background color
 GRID_COLOR = (50, 50, 50)
-GRID_WIDTH = 80
-GRID_HEIGHT = 80
-
-CELL_ACTIVE = 1
-CELL_INACTIVE = 0
 
 # initialize the grids
 GRID = [[CELL_INACTIVE for x in range(GRID_WIDTH)] for y in range(GRID_HEIGHT)]
-NEXT_GEN_GRID = [[CELL_INACTIVE for x in range(GRID_WIDTH)] for y in range(GRID_HEIGHT)]
 
 # Initialize pygame and create window
 pygame.init()
@@ -33,6 +29,11 @@ clock = pygame.time.Clock()
 
 def set_initial_state():
     """Let the player set the initial state by clicking on cells"""
+    # empty the grid
+    for x in range(GRID_WIDTH):
+        for y in range(GRID_HEIGHT):
+            GRID[x][y] = CELL_INACTIVE
+
     running = True
     while running:
         # Keep loop running at the right speed
@@ -51,6 +52,20 @@ def set_initial_state():
             GRID[pos[0] // CELL_SIZE][pos[1] // CELL_SIZE] = CELL_ACTIVE
         # if left mouse button is pressed close the current loop
         if mouse[2]:
+            running = False
+
+        # if key '1' is pressed set the initial state to the gun one state
+        pressed = pygame.key.get_pressed()
+        if pressed[pygame.K_1]:
+            new_grid = get_gun_one_state()
+            # copy the new grid to the current grid
+            copy_grid(new_grid, GRID)
+
+            running = False
+        # if key '2' is pressed set the initial state to the gun two state
+        if pressed[pygame.K_2]:
+            new_grid = get_gun_two_state()
+            copy_grid(new_grid, GRID)
             running = False
 
         # Draw / render
@@ -72,6 +87,12 @@ def set_initial_state():
         pygame.display.flip()
 
 
+def copy_grid(grid_to_copy, grid_to_copy_to):
+    for x in range(GRID_WIDTH):
+        for y in range(GRID_HEIGHT):
+            grid_to_copy_to[x][y] = grid_to_copy[x][y]
+
+
 def run_game_loop():
     """Run the game loop"""
     running = True
@@ -85,46 +106,62 @@ def run_game_loop():
             if event.type == pygame.QUIT:
                 running = False
 
-        # Update the next generation grid
-        for x in range(GRID_WIDTH):
-            for y in range(GRID_HEIGHT):
-                NEXT_GEN_GRID[x][y] = get_next_state(x, y)
-        
         # Copy the next generation grid to the current grid
-        for x in range(GRID_WIDTH):
-            for y in range(GRID_HEIGHT):
-                GRID[x][y] = NEXT_GEN_GRID[x][y]
+        copy_grid(get_next_gen_grid(), GRID)
 
         # Draw / render
         render_grid()
 
+        # if key 'r' is pressed start a new game
+        pressed = pygame.key.get_pressed()
+        if pressed[pygame.K_r]:
+            print("Starting a new game")
+            start_game()
+        # if q is pressed quit the game
+        if pressed[pygame.K_q]:
+            print("Quitting the game")
+            running = False
+
         pygame.display.flip()
 
     pygame.quit()
+
+
+def get_next_gen_grid():
+    next_gen_grid = [
+        [CELL_INACTIVE for x in range(GRID_WIDTH)] for y in range(GRID_HEIGHT)
+    ]
+
+    for x in range(GRID_WIDTH):
+        for y in range(GRID_HEIGHT):
+            next_gen_grid[x][y] = get_next_state(x, y)
+
+    return next_gen_grid
+
 
 def render_grid():
     for x in range(GRID_WIDTH):
         for y in range(GRID_HEIGHT):
             if GRID[x][y] == CELL_ACTIVE:
                 pygame.draw.rect(
-                        screen,
-                        ACTIVE_CELL_COLOR,
-                        (x * CELL_SIZE, y * CELL_SIZE, CELL_SIZE, CELL_SIZE),
-                    )
+                    screen,
+                    ACTIVE_CELL_COLOR,
+                    (x * CELL_SIZE, y * CELL_SIZE, CELL_SIZE, CELL_SIZE),
+                )
             else:
                 pygame.draw.rect(
-                        screen,
-                        INACTIVE_CELL_COLOR,
-                        (x * CELL_SIZE, y * CELL_SIZE, CELL_SIZE, CELL_SIZE),
-                    )
+                    screen,
+                    INACTIVE_CELL_COLOR,
+                    (x * CELL_SIZE, y * CELL_SIZE, CELL_SIZE, CELL_SIZE),
+                )
 
 
 def get_next_state(x, y):
     """Get the next state of the cell at x, y. The rule are as follows:
-        1. Any live cell with fewer than two live neighbours dies, as if by underpopulation.
-        2. Any live cell with two or three live neighbours lives on to the next generation.
-        3. Any live cell with more than three live neighbours dies, as if by overpopulation.
-        4. Any dead cell with exactly three live neighbours becomes a live cell, as if by reproduction.
+    1. Any live cell with fewer than two live neighbours dies, as if by underpopulation.
+    2. Any live cell with two or three live neighbours lives on to the next generation.
+    3. Any live cell with more than three live neighbours dies, as if by overpopulation.
+    4. Any dead cell with exactly three live neighbours becomes a live cell, as if by reproduction.
     """
     # Get the number of active neighbors
     active_neighbors = 0
@@ -135,7 +172,7 @@ def get_next_state(x, y):
                     continue
                 if GRID[x + i][y + j] == CELL_ACTIVE:
                     active_neighbors += 1
-    
+
     # Apply the rules
     # 1. Any live cell with fewer than two live neighbours dies, as if by underpopulation.
     if GRID[x][y] == CELL_ACTIVE and active_neighbors < 2:
@@ -151,6 +188,10 @@ def get_next_state(x, y):
         return CELL_ACTIVE
 
 
-if __name__ == "__main__":
+def start_game():
     set_initial_state()
     run_game_loop()
+
+
+if __name__ == "__main__":
+    start_game()

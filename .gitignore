@@ -1,1 +1,5 @@
+# The local build environment
 /game_of_life_env
+# Contains the compiled python files
+**/__pycache__/
+```
